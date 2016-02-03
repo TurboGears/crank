@@ -16,7 +16,7 @@ class which provides the ordinary TurboGears mechanism.
 
 """
 
-from crank.util import get_argspec, method_matches_args
+from crank.util import get_argspec
 from crank.dispatcher import Dispatcher
 from webob.exc import HTTPNotFound
 from inspect import ismethod
@@ -98,7 +98,7 @@ class ObjectDispatcher(Dispatcher):
            Also, this is the place where the controller is checked for
            controller-level security.
         """
-        
+
         dispatcher = getattr(controller, '_dispatch', None)
         if dispatcher is not None:
             state.add_controller(current_path, controller)
@@ -120,12 +120,12 @@ class ObjectDispatcher(Dispatcher):
                 current_controller = state.controller
                 method = getattr(current_controller, 'index', None)
                 if method:
-                    if method_matches_args(method, state.params, remainder, self._use_lax_params):
+                    if self._method_matches_args(method, state.params, remainder, self._use_lax_params):
                         state.add_method(current_controller.index, remainder)
                         return state
             raise HTTPNotFound
         else:
-        
+
             m_type, meth, m_remainder, warning = state._notfound_stack.pop()
 
             if m_type == 'lookup':
@@ -150,7 +150,7 @@ class ObjectDispatcher(Dispatcher):
             state.add_controller('/', self)
         if remainder is None:
             remainder = state.path
-            
+
         current_controller = state.controller
 
         #skip any empty urls
@@ -162,7 +162,7 @@ class ObjectDispatcher(Dispatcher):
         #we are plumb out of path, check for index
         if not remainder:
             if self._is_exposed(current_controller, 'index') and \
-               method_matches_args(current_controller.index, state.params, remainder, self._use_lax_params):
+               self._method_matches_args(current_controller.index, state.params, remainder, self._use_lax_params):
                 state.add_method(current_controller.index, remainder)
                 return state
             #if there is no index, head up the tree
@@ -177,7 +177,7 @@ class ObjectDispatcher(Dispatcher):
         if self._is_exposed(current_controller, current_path):
             #check to see if the argspec jives
             controller = getattr(current_controller, current_path)
-            if method_matches_args(controller, state.params, current_args, self._use_lax_params):
+            if self._method_matches_args(controller, state.params, current_args, self._use_lax_params):
                 state.add_method(controller, current_args)
                 return state
 
@@ -200,4 +200,59 @@ class ObjectDispatcher(Dispatcher):
             state._notfound_stack.append(('lookup', current_controller._lookup, remainder, None))
         if hasattr(current_controller, '_default') and self._is_exposed(current_controller, '_default'):
             state._notfound_stack.append(('default', current_controller._default, remainder, None))
-            
+
+    def _method_required_vars(self, method, params, argvars, argvals):
+        required_vars = argvars
+        if argvals:
+            required_vars = argvars[:-len(argvals)]
+        return required_vars
+
+    def _method_matches_args(self, method, params, remainder, lax_params=False):
+        """
+        This method matches the params from the request along with the remainder to the
+        method's function signiture.  If the two jive, it returns true.
+        """
+        argvars, ovar_args, argkws, argvals = get_argspec(method)
+
+        required_vars = self._method_required_vars(method, params, argvars, argvals)
+
+        params = params.copy()
+
+        #remove the appropriate remainder quotient
+        if len(remainder)<len(required_vars):
+            #pull the first few off with the remainder
+            required_vars = required_vars[len(remainder):]
+        else:
+            #there is more of a remainder than there is non optional vars
+            required_vars = []
+
+        #remove vars found in the params list
+        for var in required_vars[:]:
+            if var in params:
+                required_vars.pop(0)
+                # remove the param from the params so when we see if
+                # there are params that arent in the non-required vars we
+                # can evaluate properly
+                del params[var]
+            else:
+                break;
+
+        #remove params that have a default value
+        vars_with_default = argvars[len(argvars)-len(argvals):]
+        for var in vars_with_default:
+            if var in params:
+                del params[var]
+
+        #make sure no params exist if keyword argumnts are missing
+        if not lax_params and argkws is None and params:
+            return False
+
+        #make sure all of the non-optional-vars are there
+        if not required_vars:
+            #there are more args in the remainder than are available in the argspec
+            if len(argvars)<len(remainder) and not ovar_args:
+                return False
+            return True
+
+
+        return False

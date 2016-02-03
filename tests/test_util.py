@@ -1,4 +1,5 @@
 # encoding: utf-8
+
 from crank.util import *
 from crank.util import _PY2
 
@@ -70,57 +71,6 @@ def test_remove_argspec_params_from_params_avoid_creating_duplicate_parameters()
 def test_remove_argspec_params_from_params_avoid_duplicate_params():
     params, remainder = remove_argspec_params_from_params(mock_f2, {'a':1, 'b':2}, ['a', 'b'])
 
-
-def test_method_matches_args_no_remainder():
-    params = {'a':1, 'b':2, 'c':3}
-    remainder = []
-    r = method_matches_args(mock_f, params, remainder)
-    assert r
-
-def test_method_matches_args_no_lax_params():
-    params = {'a':1, 'b':2, 'c':3, 'x':4}
-    remainder = []
-    r = method_matches_args(mock_f2, params, remainder, False)
-    assert not(r)
-
-def test_method_matches_args_fails_no_remainder():
-    params = {'a':1, 'x':3}
-    remainder = []
-    r = method_matches_args(mock_f, params, remainder)
-    assert not(r)
-
-def test_method_matches_args_no_params():
-    params = {}
-    remainder = [1, 2]
-    r = method_matches_args(mock_f, params, remainder)
-    assert r
-
-def test_method_matches_args_fails_no_params():
-    params = {}
-    remainder = [2]
-    r = method_matches_args(mock_f, params, remainder)
-    assert not(r)
-
-def test_method_matches_args_fails_no_params():
-    params = {}
-    remainder = [2]
-    r = method_matches_args(mock_f2, params, remainder)
-    assert not(r)
-
-def test_method_matches_args_fails_more_remainder_than_argspec():
-    params = {}
-    remainder = [2, 3, 4, 5]
-    r = method_matches_args(mock_f2, params, remainder)
-    assert not(r)
-
-def mock_f3(self, a, b, c=None, d=50):
-    pass
-
-def test_method_matches_args_with_default_values():
-    params = {'a':1, 'b':2, 'c':3, 'd':4}
-    remainder = []
-    r = method_matches_args(mock_f3, params, remainder)
-    assert r
 
 def assert_path(instance, expected, kind=list):
     assert kind(instance.path) == expected, (kind(instance.path), expected)

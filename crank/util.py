@@ -5,12 +5,15 @@ Copyright (c) Chrispther Perkins
 MIT License
 """
 
-import collections, sys, string, inspect
+import collections
+import inspect
+import string
+import sys
 
 __all__ = [
-        'get_argspec', 'get_params_with_argspec', 'remove_argspec_params_from_params',
-        'method_matches_args', 'Path', 'default_path_translator'
-    ]
+    'get_argspec', 'get_params_with_argspec', 'remove_argspec_params_from_params',
+    'Path', 'default_path_translator'
+]
 
 
 _PY2 = bool(sys.version_info[0] == 2)
@@ -122,61 +125,6 @@ def remove_argspec_params_from_params(func, params, remainder):
             del params[var]
 
     return params, tuple(remainder)
-
-
-def method_matches_args(method, params, remainder, lax_params=False):
-    """
-    This method matches the params from the request along with the remainder to the
-    method's function signiture.  If the two jive, it returns true.
-
-    It is very likely that this method would go into ObjectDispatch in the future.
-    """
-    argvars, ovar_args, argkws, argvals = get_argspec(method)
-
-    required_vars = argvars
-    if argvals:
-        required_vars = argvars[:-len(argvals)]
-
-    params = params.copy()
-
-    #remove the appropriate remainder quotient
-    if len(remainder)<len(required_vars):
-        #pull the first few off with the remainder
-        required_vars = required_vars[len(remainder):]
-    else:
-        #there is more of a remainder than there is non optional vars
-        required_vars = []
-
-    #remove vars found in the params list
-    for var in required_vars[:]:
-        if var in params:
-            required_vars.pop(0)
-            # remove the param from the params so when we see if
-            # there are params that arent in the non-required vars we
-            # can evaluate properly
-            del params[var]
-        else:
-            break;
-
-    #remove params that have a default value
-    vars_with_default = argvars[len(argvars)-len(argvals):]
-    for var in vars_with_default:
-        if var in params:
-            del params[var]
-
-    #make sure no params exist if keyword argumnts are missing
-    if not lax_params and argkws is None and params:
-        return False
-
-    #make sure all of the non-optional-vars are there
-    if not required_vars:
-        #there are more args in the remainder than are available in the argspec
-        if len(argvars)<len(remainder) and not ovar_args:
-            return False
-        return True
-
-
-    return False
 
 
 if _PY2: #pragma: no cover

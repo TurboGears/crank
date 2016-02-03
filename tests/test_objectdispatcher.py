@@ -115,7 +115,7 @@ class TestDispatcher:
 
     def test_create(self):
         pass
-    
+
     def test_call(self):
         req = MockRequest('/')
         state = DispatchState(req)
@@ -194,7 +194,7 @@ class TestDispatcher:
     def test_controller_method_with_args_missing_args_index_disabled(self):
         req = MockRequest('/with_args/a')
         state = DispatchState(req, mock_dispatcher_with_index_with_argvars)
-        
+
         try:
             mock_dispatcher_with_index_with_argvars._use_index_fallback = False
             state = mock_dispatcher_with_index_with_argvars._dispatch(state)
@@ -295,3 +295,59 @@ class TestDispatcher:
         assert state.method.__name__ == 'with_args', state.method
         assert 'para.meter1' in state.remainder, state.remainder
         assert 'para.meter2.json' in state.remainder, state.remainder
+
+def mock_f(self, a, b, c=None, d=50, *args, **kw):
+    pass
+
+def mock_f2(self, a, b):
+    pass
+
+def mock_f3(self, a, b, c=None, d=50):
+    pass
+
+def test_method_matches_args_no_remainder():
+    params = {'a':1, 'b':2, 'c':3}
+    remainder = []
+    r = ObjectDispatcher()._method_matches_args(mock_f, params, remainder)
+    assert r
+
+
+def test_method_matches_args_no_lax_params():
+    params = {'a':1, 'b':2, 'c':3, 'x':4}
+    remainder = []
+    r = ObjectDispatcher()._method_matches_args(mock_f2, params, remainder, False)
+    assert not(r)
+
+
+def test_method_matches_args_fails_no_remainder():
+    params = {'a':1, 'x':3}
+    remainder = []
+    r = ObjectDispatcher()._method_matches_args(mock_f, params, remainder)
+    assert not(r)
+
+
+def test_method_matches_args_no_params():
+    params = {}
+    remainder = [1, 2]
+    r = ObjectDispatcher()._method_matches_args(mock_f, params, remainder)
+    assert r
+
+
+def test_method_matches_args_fails_no_params():
+    params = {}
+    remainder = [2]
+    r = ObjectDispatcher()._method_matches_args(mock_f, params, remainder)
+    assert not(r)
+
+
+def test_method_matches_args_fails_more_remainder_than_argspec():
+    params = {}
+    remainder = [2, 3, 4, 5]
+    r = ObjectDispatcher()._method_matches_args(mock_f2, params, remainder)
+
+
+def test_method_matches_args_with_default_values():
+    params = {'a':1, 'b':2, 'c':3, 'd':4}
+    remainder = []
+    r = ObjectDispatcher()._method_matches_args(mock_f3, params, remainder)
+    assert r
