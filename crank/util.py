@@ -297,7 +297,7 @@ class Path(collections.deque):
         return unicode(self.separator).join(self)
 
     def __repr__(self):
-        return "<Path %r>" % super(Path, self).__repr__()
+        return "<Path [%s]>" % ', '.join((repr(p) for p in self))
 
     def __eq__(self, other):
         return type(other)(self) == other

@@ -281,7 +281,7 @@ def test_path_str():
     
     instance = MockOb()
     instance.path = '/foo/bar'
-    yield assert_path, instance, """<Path "deque([\'\', \'foo\', \'bar\'])">""", repr
+    yield assert_path, instance, """<Path ['', 'foo', 'bar']>""", repr
 
 def test_path_unicode():
     class MockOb(object):
