@@ -1,4 +1,4 @@
-from nose.tools import raises
+import pytest
 from crank.dispatcher import *
 
 class TestDispatcher:
@@ -9,7 +9,7 @@ class TestDispatcher:
     def test_create(self):
         pass
 
-    @raises(NotImplementedError)
     def test_dispatch(self):
-        self.dispatcher._dispatch(1,2)
+        with pytest.raises(NotImplementedError):
+            self.dispatcher._dispatch(1,2)
 

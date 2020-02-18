@@ -1,4 +1,5 @@
 # encoding: utf-8
+import pytest
 from crank.util import *
 from crank.util import _PY2
 import functools
@@ -239,71 +240,68 @@ def assert_path(instance, expected, kind=list):
 def test_path_path():
     assert Path(Path('/foo')) == ['', 'foo']
 
-def test_path_list():
+@pytest.mark.parametrize("path,expected", [
+    ('/', ['', '']),
+    ('/foo', ['', 'foo']),
+    ('/foo/bar', ['', 'foo', 'bar']),
+    ('/foo/bar/', ['', 'foo', 'bar', '']),
+    ('/foo//bar/', ['', 'foo', '', 'bar', '']),
+    (('foo', ), ['foo']),
+    (('foo', 'bar'), ['foo', 'bar'])
+])
+def test_path_list(path, expected):
     class MockOb(object):
         path = Path()
-    
-    cases = [
-            ('/', ['', '']),
-            ('/foo', ['', 'foo']),
-            ('/foo/bar', ['', 'foo', 'bar']),
-            ('/foo/bar/', ['', 'foo', 'bar', '']),
-            ('/foo//bar/', ['', 'foo', '', 'bar', '']),
-            (('foo', ), ['foo']),
-            (('foo', 'bar'), ['foo', 'bar'])
-        ]
-    
-    for case, expected in cases:
-        instance = MockOb()
-        instance.path = case
-        
-        yield assert_path, instance, expected
 
-def test_path_str():
+    instance = MockOb()
+    instance.path = path
+    assert_path(instance, expected)
+
+@pytest.mark.parametrize("path,expected", [
+    ('/', "/"),
+    ('/foo', '/foo'),
+    ('/foo/bar', '/foo/bar'),
+    ('/foo/bar/', '/foo/bar/'),
+    ('/foo//bar/', '/foo//bar/'),
+    (('foo', ), 'foo'),
+    (('foo', 'bar'), 'foo/bar')
+])
+def test_path_str(path, expected):
     class MockOb(object):
         path = Path()
-    
-    cases = [
-            ('/', "/"),
-            ('/foo', '/foo'),
-            ('/foo/bar', '/foo/bar'),
-            ('/foo/bar/', '/foo/bar/'),
-            ('/foo//bar/', '/foo//bar/'),
-            (('foo', ), 'foo'),
-            (('foo', 'bar'), 'foo/bar')
-        ]
-    
-    for case, expected in cases:
-        instance = MockOb()
-        instance.path = case
-        
-        yield assert_path, instance, expected, str
     
     instance = MockOb()
-    instance.path = '/foo/bar'
-    yield assert_path, instance, """<Path ['', 'foo', 'bar']>""", repr
-
-def test_path_unicode():
+    instance.path = path
+    assert_path(instance, expected, str)
+    
+def test_path_repr():
     class MockOb(object):
         path = Path()
-    
-    cases = [
-            ('/', "/"),
-            (u('/©'), u('/©')),
-            (u('/©/™'), u('/©/™')),
-            (u('/©/™/'), u('/©/™/')),
-            ((u('¡'), ), u('¡')),
-            (('foo', u('¡')), u('foo/¡'))
-        ]
-    
-    for case, expected in cases:
-        instance = MockOb()
-        instance.path = case
 
-        if _PY2:
-            yield assert_path, instance, expected, unicode
-        else:
-            yield assert_path, instance, expected, str
+    instance = MockOb()
+    instance.path = '/foo/bar'
+    assert_path(instance, """<Path ['', 'foo', 'bar']>""", repr)
+
+
+@pytest.mark.parametrize("path,expected", [
+    ('/', "/"),
+    (u('/©'), u('/©')),
+    (u('/©/™'), u('/©/™')),
+    (u('/©/™/'), u('/©/™/')),
+    ((u('¡'), ), u('¡')),
+    (('foo', u('¡')), u('foo/¡'))
+])
+def test_path_unicode(path, expected):
+    class MockOb(object):
+        path = Path()
+
+    instance = MockOb()
+    instance.path = path
+
+    if _PY2:
+        assert_path(instance, expected, unicode)
+    else:
+        assert_path(instance, expected, str)
 
 def test_path_slicing():
     class MockOb(object):

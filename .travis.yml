@@ -4,15 +4,15 @@ python:
   - "3.4"
   - "3.5"
   - "3.6"
+  - "3.7"
   - "nightly"
 
 install:
-  - "pip install coverage"
-  - "pip install nose"
-  - "pip install coveralls"
   - "pip install -e .[testing]"
+  - "pip install pytest-cov"
+  - "pip install coveralls"
 
-script: "nosetests -v --with-coverage --cover-package=crank --cover-erase"
+script: "pytest -v --cov=crank"
 
 after_success:
   coveralls

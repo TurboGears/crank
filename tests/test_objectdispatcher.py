@@ -1,6 +1,6 @@
 # encoding: utf-8
 import sys
-from nose.tools import raises
+import pytest
 from crank.objectdispatcher import *
 from crank.dispatchstate import DispatchState
 from webob.exc import HTTPNotFound
@@ -120,7 +120,7 @@ class TestDispatcher:
         req = MockRequest('/')
         state = DispatchState(req, self.dispatcher)
         state = state.resolve()
-        assert state.method.__name__ == 'index', state.method
+        assert state.action.__name__ == 'index', state.method
 
     def test_call_twice(self):
         req = MockRequest('/')
@@ -130,7 +130,7 @@ class TestDispatcher:
         try:
             state = state.resolve()
         except RuntimeError:
-            assert state.method.__name__ == 'index', state.method
+            assert state.action.__name__ == 'index', state.method
         else:
             assert False, 'Should have raised RuntimeError'
 
@@ -138,150 +138,148 @@ class TestDispatcher:
         req = MockRequest('/')
         state = DispatchState(req, self.dispatcher) 
         state = self.dispatcher._dispatch(state, [])
-        assert state.method.__name__ == 'index', state.method
+        assert state.action.__name__ == 'index', state.method
 
     def test_dispatch_default(self):
         req = MockRequest('/', params={'a':1})
         state = DispatchState(req, self.dispatcher)
         state = state.resolve()
-        assert state.method.__name__ == '_default', state.method
+        assert state.action.__name__ == '_default', state.method
 
     def test_dispatch_default_with_unicode(self):
         req = MockRequest('/', params={u('å'):u('ß')})
         state = DispatchState(req, self.dispatcher) 
         state = state.resolve()
-        assert state.method.__name__ == '_default', state.method
+        assert state.action.__name__ == '_default', state.method
 
     def test_controller_method_dispatch_no_args(self):
         req = MockRequest('/no_args')
         state = DispatchState(req, self.dispatcher) 
         state = state.resolve()
-        assert state.method.__name__ == 'no_args', state.method
+        assert state.action.__name__ == 'no_args', state.method
 
     def test_controller_method_with_unicode_args(self):
         req = MockRequest(u('/with_args/å/ß'))
         state = DispatchState(req, self.dispatcher) 
         state = state.resolve()
-        assert state.method.__name__ == 'with_args', state.method
+        assert state.action.__name__ == 'with_args', state.method
 
     def test_controller_method_with_empty_args(self):
         req = MockRequest('/with_args//a/b')
         state = DispatchState(req, self.dispatcher) 
         state = state.resolve()
-        assert state.method.__name__ == '_default', state.method
+        assert state.action.__name__ == '_default', state.method
 
     def test_controller_method_with_args(self):
         req = MockRequest('/with_args/a/b')
         state = DispatchState(req, self.dispatcher) 
         state = state.resolve()
-        assert state.method.__name__ == 'with_args', state.method
+        assert state.action.__name__ == 'with_args', state.method
 
     def test_controller_method_with_args_missing_args_default(self):
         req = MockRequest('/with_args/a')
         state = DispatchState(req, self.dispatcher) 
         state = state.resolve()
-        assert state.method.__name__ == '_default', state.method
+        assert state.action.__name__ == '_default', state.method
 
-    @raises(HTTPNotFound)
     def test_controller_method_with_args_missing_args_404_default_or_index(self):
         req = MockRequest('/with_args/a')
         state = DispatchState(req, mock_dispatcher_with_no_default_or_index)
-        state = state.resolve()
-        assert state.method.__name__ == '_default', state.method
+        with pytest.raises(HTTPNotFound):
+            state = state.resolve()
 
-    @raises(HTTPNotFound)
     def test_controller_method_with_args_missing_args_404_no_default(self):
         req = MockRequest('/with_args/a')
         state = DispatchState(req, mock_dispatcher_with_no_default)
-        state = state.resolve()
-        assert state.method.__name__ == '_default', state.method
+        with pytest.raises(HTTPNotFound):
+            state = state.resolve()
 
     def test_controller_method_with_args_missing_args_index(self):
         req = MockRequest('/with_args/a')
         state = DispatchState(req, mock_dispatcher_with_index_with_argvars)
         state = state.resolve()
-        assert state.method.__name__ == 'index', state.method
+        assert state.action.__name__ == 'index', state.method
 
-    @raises(HTTPNotFound)
     def test_controller_method_with_args_missing_args_index_disabled(self):
         req = MockRequest('/with_args/a')
         state = DispatchState(req, mock_dispatcher_with_index_with_argvars)
         
         try:
             mock_dispatcher_with_index_with_argvars._use_index_fallback = False
-            state = state.resolve()
+            with pytest.raises(HTTPNotFound):
+                state = state.resolve()
         finally:
             mock_dispatcher_with_index_with_argvars._use_index_fallback = True
 
-    @raises(MockError)
     def test_check_security(self):
         req = MockRequest('/with_args/a')
         state = DispatchState(req, mock_dispatcher_with_check_security)
-        state = state.resolve()
+        with pytest.raises(MockError):
+            state = state.resolve()
 
     def test_sub_dispatcher(self):
         req = MockRequest('/sub')
         state = DispatchState(req, self.dispatcher) 
         state = state.resolve()
-        assert state.method.__name__ == 'index', state.method
+        assert state.action.__name__ == 'index', state.method
         assert state.controller.__class__.__name__ == 'MockSubDispatcher', state.controller
 
     def test_sub_dispatcher_bad_remainder_call_parent_default(self):
         req = MockRequest('/sub/a')
         state = DispatchState(req, self.dispatcher) 
         state = state.resolve()
-        assert state.method.__name__ == '_default', state.method
+        assert state.action.__name__ == '_default', state.method
 
     def test_sub_dispatcher_bad_params_call_parent_default(self):
         req = MockRequest('/sub', params={'a':1})
         state = DispatchState(req, self.dispatcher) 
         state = state.resolve()
-        assert state.method.__name__ == '_default', state.method
+        assert state.action.__name__ == '_default', state.method
 
     def test_sub_dispatcher_override_dispatch(self):
         req = MockRequest('/override_dispatch', params={'a':1})
         state = DispatchState(req, self.dispatcher) 
         state = state.resolve()
-        assert state.method.__name__ == 'wacky', state.method
+        assert state.action.__name__ == 'wacky', state.method
 
     def test_lookup_dispatch(self):
         req = MockRequest('/get_here')
         state = DispatchState(req, mock_lookup_dispatcher_with_args)
         state = state.resolve()
-        assert state.method.__name__ == 'get_here', state.method
+        assert state.action.__name__ == 'get_here', state.method
         assert state.controller.__class__.__name__ == 'MockLookupHelperWithArgs', state.controller
 
-    @raises(HTTPNotFound)
     def test_lookup_dispatch_bad_params(self):
         req = MockRequest('/get_here', params={'a':1})
         state = DispatchState(req, mock_lookup_dispatcher_with_args)
-        state = state.resolve()
+        with pytest.raises(HTTPNotFound):
+            state = state.resolve()
 
     def test_path_translation(self):
         req = MockRequest('/no.args.json')
         state = DispatchState(req, mock_dispatcher_with_no_default_or_index, path_translator=True)
         state = state.resolve()
-        assert state.method.__name__ == 'no_args', state.method
+        assert state.action.__name__ == 'no_args', state.method
 
     def test_path_translation_no_extension(self):
         req = MockRequest('/no.args')
         state = DispatchState(req, mock_dispatcher_with_no_default_or_index,
                               strip_extension=False, path_translator=True)
         state = state.resolve()
-        assert state.method.__name__ == 'no_args', state.method
+        assert state.action.__name__ == 'no_args', state.method
 
-    @raises(HTTPNotFound)
     def test_disabled_path_translation_no_extension(self):
         req = MockRequest('/no.args')
         state = DispatchState(req, mock_dispatcher_with_no_default_or_index,
                               strip_extension=False, path_translator=None)
-        state = state.resolve()
+        with pytest.raises(HTTPNotFound):
+            state = state.resolve()
 
     def test_path_translation_args_skipped(self):
         req = MockRequest('/with.args/para.meter1/para.meter2.json')
         state = DispatchState(req, mock_dispatcher_with_no_default_or_index, path_translator=True)
         state = state.resolve()
-        assert state.method.__name__ == 'with_args', state.method
+        assert state.action.__name__ == 'with_args', state.method
         assert 'para.meter1' in state.remainder, state.remainder
         assert 'para.meter2' in state.remainder, state.remainder
 
@@ -292,7 +290,7 @@ class TestDispatcher:
 
         path_pieces = [piece[0] for piece in state.controller_path]
         assert 'sub_child' in path_pieces
-        assert state.method.__name__ == 'with_args', state.method
+        assert state.action.__name__ == 'with_args', state.method
         assert 'para.meter1' in state.remainder, state.remainder
         assert 'para.meter2' in state.remainder, state.remainder
 
@@ -304,6 +302,6 @@ class TestDispatcher:
 
         path_pieces = [piece[0] for piece in state.controller_path]
         assert 'sub_child' in path_pieces
-        assert state.method.__name__ == 'with_args', state.method
+        assert state.action.__name__ == 'with_args', state.method
         assert 'para.meter1' in state.remainder, state.remainder
         assert 'para.meter2.json' in state.remainder, state.remainder

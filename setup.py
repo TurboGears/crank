@@ -21,9 +21,7 @@ setup(name='crank',
       include_package_data=True,
       zip_safe=True,
       extras_require={
-           # Used by Travis and Coverage due to setup.py nosetests
-           # causing a coredump when used with coverage
-           'testing': ['webob'],
+           'testing': ["webob", "pytest"],
       },
       install_requires=[
           # -*- Extra requirements: -*-
