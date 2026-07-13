@@ -110,7 +110,7 @@ mock_dispatcher_with_no_index = MockDispatcherWithNoIndex()
 
 class TestDispatcher:
 
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = MockDispatcher()
 
     def test_create(self):
