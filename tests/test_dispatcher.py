@@ -3,7 +3,7 @@ from crank.dispatcher import *
 
 class TestDispatcher:
 
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = Dispatcher()
 
     def test_create(self):

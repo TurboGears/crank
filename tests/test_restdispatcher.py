@@ -3,7 +3,7 @@ import pytest
 from crank.restdispatcher import RestDispatcher
 from crank.objectdispatcher import ObjectDispatcher
 from crank.dispatchstate import DispatchState
-from webob.exc import HTTPNotFound, HTTPMethodNotAllowed
+from webob.exc import HTTPBadRequest, HTTPNotFound, HTTPMethodNotAllowed
 
 
 
@@ -109,7 +109,7 @@ class MockDispatcherWithLookupOnSecurity(ObjectDispatcher):
 
 class TestDispatcher:
 
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = MockDispatcher()
 
     def test_create(self):
@@ -185,7 +185,7 @@ class TestDispatcher:
 
 class TestSimpleDispatcher:
 
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = MockSimpleDispatcher()
 
     def test_get(self):
@@ -214,7 +214,7 @@ class TestSimpleDispatcher:
 
 class TestEmbeddedRestDispatcher:
 
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = MockEmbeddedRestDispatcher()
 
     def test_create(self):
@@ -230,7 +230,7 @@ class TestEmbeddedRestDispatcher:
 
 class TestMinimalRestDispatcher:
 
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = MockMinimalRestDispatcher()
 
     def test_create(self):
@@ -244,7 +244,7 @@ class TestMinimalRestDispatcher:
 
 class TestDispatcherWithArgs:
 
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = MockDispatcherWithArgs()
 
     def test_create(self):
@@ -283,7 +283,7 @@ class TestDispatcherWithArgs:
     def test_post_bad(self):
         req = MockRequest('/aaa/aaa', method='post')
         state = DispatchState(req, self.dispatcher)
-        with pytest.raises(HTTPNotFound):
+        with pytest.raises(HTTPBadRequest):
             state = state.resolve()
 
     def test_other_delete_bad(self):
@@ -307,7 +307,7 @@ class TestDispatcherWithArgs:
 
 class TestDispatcherWithVarArgs:
 
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = MockDispatcherWithVarArgs()
 
     def test_create(self):
@@ -331,7 +331,7 @@ class MockCustomMethodDispatcher(RestDispatcher):
 
 class TestCustomMethodDispatcher:
 
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = MockCustomMethodDispatcher()
 
     def test_create(self):
@@ -373,7 +373,7 @@ class SubCustomMethodDispatcher(MockDispatcher):
 
 class TestSubCustomMethodDispatcher:
 
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = SubCustomMethodDispatcher()
 
     def test_create(self):
@@ -393,7 +393,7 @@ class OtherSubCustomMethodDispatcher(MockDispatcher):
 
 class TestSubNoGetDispatcher:
 
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = OtherSubCustomMethodDispatcher()
 
     def test_create(self):
@@ -406,7 +406,7 @@ class TestSubNoGetDispatcher:
             state = state.resolve()
 
 class TestEmptyDispatcher:
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = SubNoGet()
 
     def test_create(self):
@@ -419,7 +419,7 @@ class TestEmptyDispatcher:
             state = state.resolve()
 
 class TestRestWithSecurity:
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = MockDispatcherWithLookupOnSecurity()
 
     def test_check_security_with_lookup(self):
@@ -449,7 +449,7 @@ class TestRestWithLookup:
                 return self.sub, args[1:]
         rest = rest()
 
-    def setup(self):
+    def setup_method(self, method):
         self.dispatcher = self.RootController()
 
     def test_rest_with_lookup(self):
@@ -485,7 +485,7 @@ class TestRestCheckSecurity:
 
         rest = rest()
 
-    def setup(self):
+    def setup_method(self, method):
         self.security_tracing = []
         self.dispatcher = self.RootController()
         self.dispatcher.rest.trace_security_visits = self.security_tracing
@@ -497,3 +497,196 @@ class TestRestCheckSecurity:
         assert state.controller.__class__.__name__ == 'rest', state.controller
         assert state.action.__name__ == 'get', state.method
         assert len(self.security_tracing) == 1, self.security_tracing
+
+
+class NestedBodyMethodDispatcher(RestDispatcher):
+    def post(self):
+        pass
+
+    def put(self):
+        pass
+
+    def patch(self):
+        pass
+
+
+class BodyMethodDispatcher(RestDispatcher):
+    nested = NestedBodyMethodDispatcher()
+
+    def post(self, required, optional=None):
+        pass
+
+    def put(self, required, optional=None):
+        pass
+
+    def patch(self, required, optional=None):
+        pass
+
+    def get_one(self, required):
+        pass
+
+    def delete(self, required):
+        pass
+
+    def custom(self, required):
+        pass
+
+    def direct(self, required):
+        pass
+
+
+class BodyMethodDefaultFallbackDispatcher(BodyMethodDispatcher):
+    def _default(self, *args, **kwargs):
+        pass
+
+
+class BodyMethodLookupTarget(ObjectDispatcher):
+    def index(self):
+        pass
+
+
+class BodyMethodLookupFallbackDispatcher(BodyMethodDispatcher):
+    target = BodyMethodLookupTarget()
+
+    def _lookup(self, *args, **kwargs):
+        return self.target, args
+
+
+class AbsentBodyMethodDefaultFallbackDispatcher(RestDispatcher):
+    def _default(self, *args, **kwargs):
+        pass
+
+
+class AbsentBodyMethodLookupFallbackDispatcher(RestDispatcher):
+    target = BodyMethodLookupTarget()
+
+    def _lookup(self, *args, **kwargs):
+        return self.target, args
+
+
+class MixedBodyMethodDispatcher(RestDispatcher):
+    def post(self, first, second):
+        pass
+
+    def put(self, first, second):
+        pass
+
+    def patch(self, first, second):
+        pass
+
+
+class PostVerbFallbackDispatcher(RestDispatcher):
+    def post_patch(self):
+        pass
+
+    def post_custom(self):
+        pass
+
+    def _default(self, *args, **kwargs):
+        pass
+
+
+@pytest.mark.parametrize('method', ('POST', 'PUT', 'PATCH'))
+def test_body_method_missing_required_argument_is_bad_request(method):
+    request = MockRequest('/', method=method)
+
+    with pytest.raises(HTTPBadRequest):
+        DispatchState(request, BodyMethodDispatcher()).resolve()
+
+
+@pytest.mark.parametrize('method', ('POST', 'PUT', 'PATCH'))
+def test_body_method_mixed_path_and_keyword_missing_arg_is_bad_request(method):
+    request = MockRequest('/from-path', method=method, params={'first': 'from-param'})
+
+    with pytest.raises(HTTPBadRequest):
+        DispatchState(request, MixedBodyMethodDispatcher()).resolve()
+
+
+@pytest.mark.parametrize('method', ('POST', 'PUT', 'PATCH'))
+@pytest.mark.parametrize(
+    'path, params, remainder',
+    (
+        ('/from-path', {}, ['from-path']),
+        ('/', {'required': 'from-param'}, []),
+    ),
+)
+def test_body_method_accepts_required_path_or_keyword_argument(method, path, params, remainder):
+    state = DispatchState(MockRequest(path, method=method, params=params),
+                          BodyMethodDispatcher()).resolve()
+
+    assert state.action.__name__ == method.lower()
+    assert state.remainder == remainder
+
+
+@pytest.mark.parametrize('method', ('POST', 'PUT', 'PATCH'))
+@pytest.mark.parametrize(
+    'path, params',
+    (
+        ('/one/two/three', {}),
+        ('/', {'required': 'value', 'unexpected': 'value'}),
+        ('/', {'unexpected': 'value'}),
+    ),
+)
+@pytest.mark.parametrize(
+    'dispatcher',
+    (BodyMethodDefaultFallbackDispatcher, BodyMethodLookupFallbackDispatcher),
+)
+def test_body_method_route_mismatch_is_bad_request(method, path, params, dispatcher):
+    request = MockRequest(path, method=method, params=params)
+
+    with pytest.raises(HTTPBadRequest):
+        DispatchState(request, dispatcher()).resolve()
+
+
+@pytest.mark.parametrize('method', ('POST', 'PUT', 'PATCH'))
+@pytest.mark.parametrize(
+    'dispatcher, action',
+    (
+        (AbsentBodyMethodDefaultFallbackDispatcher, '_default'),
+        (AbsentBodyMethodLookupFallbackDispatcher, 'index'),
+    ),
+)
+def test_absent_body_method_uses_fallback(method, dispatcher, action):
+    state = DispatchState(MockRequest('/', method=method), dispatcher()).resolve()
+
+    assert state.action.__name__ == action
+
+
+@pytest.mark.parametrize('method', ('GET', 'DELETE', 'CUSTOM'))
+def test_non_body_method_missing_required_argument_is_not_found(method):
+    request = MockRequest('/', method=method)
+
+    with pytest.raises(HTTPNotFound):
+        DispatchState(request, BodyMethodDispatcher()).resolve()
+
+
+@pytest.mark.parametrize('method', ('POST', 'PUT', 'PATCH'))
+def test_body_method_direct_exposed_path_has_precedence(method):
+    state = DispatchState(MockRequest('/direct', method=method),
+                          BodyMethodDispatcher()).resolve()
+
+    assert state.action.__name__ == 'direct'
+    assert state.remainder == []
+
+
+@pytest.mark.parametrize('method', ('POST', 'PUT', 'PATCH'))
+def test_body_method_nested_controller_has_precedence(method):
+    state = DispatchState(MockRequest('/nested', method=method),
+                          BodyMethodDispatcher()).resolve()
+
+    assert state.controller.__class__ is NestedBodyMethodDispatcher
+    assert state.action.__name__ == method.lower()
+
+
+@pytest.mark.parametrize(
+    'method, action',
+    (
+        ('PATCH', '_default'),
+        ('CUSTOM', 'post_custom'),
+    ),
+)
+def test_patch_skips_post_patch_but_custom_verbs_keep_post_fallback(method, action):
+    state = DispatchState(MockRequest('/', method=method),
+                          PostVerbFallbackDispatcher()).resolve()
+
+    assert state.action.__name__ == action

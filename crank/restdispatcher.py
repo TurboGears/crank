@@ -5,7 +5,7 @@ Rest controller provides a RESTful dispatch mechanism, and
 combines controller decoration for TG-Controller behavior.
 """
 from inspect import ismethod
-from webob.exc import HTTPMethodNotAllowed
+from webob.exc import HTTPBadRequest, HTTPMethodNotAllowed
 from crank.util import get_argspec, method_matches_args
 from crank.objectdispatcher import ObjectDispatcher
 
@@ -34,9 +34,11 @@ class RestDispatcher(ObjectDispatcher):
                 return self._dispatch_controller(current_path, current_controller, state, remainder[1:])
 
         method = self._find_first_exposed(current_controller, [http_method])
-        if method and method_matches_args(method, state.params, remainder, self._use_lax_params):
-            state.set_action(method, remainder)
-            return state
+        if method:
+            if method_matches_args(method, state.params, remainder, self._use_lax_params):
+                state.set_action(method, remainder)
+                return state
+            raise HTTPBadRequest
 
         return self._dispatch_first_found_default_or_lookup(state, remainder)
 
@@ -184,6 +186,7 @@ class RestDispatcher(ObjectDispatcher):
     _handler_lookup = {
         'put':_handle_put_or_post,
         'post':_handle_put_or_post,
+        'patch':_handle_put_or_post,
         'delete':_handle_delete,
         'get':_handle_get,
         }

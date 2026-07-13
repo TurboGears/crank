@@ -9,7 +9,7 @@ class MockController(object):
 
 class TestDispatchState:
 
-    def setup(self):
+    def setup_method(self, method):
         self.request = MockRequest()
         self.dispatcher = MockController()
         self.state = DispatchState(self.request, self.dispatcher, {'a':1, 'b':2})
