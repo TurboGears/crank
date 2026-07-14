@@ -19,6 +19,12 @@ All licenses allow for non-commercial and commercial use.
 ChangeLog
 --------------
 
+0.9.0
+~~~~~
+
+- Codebase modernized, dropped Python 2 support (now requires Python >= 3.10)
+- Raise Bad Request on missing REST parameters
+
 0.8.1
 ~~~~~
 
