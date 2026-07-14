@@ -168,7 +168,7 @@ def flatten_arguments(func, params, remainder, keep_unexpected=False):
                     raise IndexError()
                 args.append(default_arg_values[default_arg_idx])
             except IndexError:
-                raise TypeError('{0} missing "{1}" required argument'.format(func, argname))
+                raise TypeError(f'{func} missing "{argname}" required argument')
 
     if varargs:
         args.extend(remainder[len(args):])
@@ -272,7 +272,7 @@ class Path(collections.deque):
         return str(self.separator).join(self)
 
     def __repr__(self):
-        return "<Path [%s]>" % ', '.join((repr(p) for p in self))
+        return f"<Path [{', '.join(repr(p) for p in self)}]>"
 
     def __eq__(self, other):
         return type(other)(self) == other

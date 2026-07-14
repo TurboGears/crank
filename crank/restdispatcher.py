@@ -115,7 +115,7 @@ class RestDispatcher(ObjectDispatcher):
 
         current_controller = state.controller
 
-        get_method = self._find_first_exposed(current_controller, ('get_%s' % method_name, method_name))
+        get_method = self._find_first_exposed(current_controller, (f'get_{method_name}', method_name))
         if get_method:
             new_remainder = remainder[:-1]
             if method_matches_args(get_method, state.params, new_remainder, self._use_lax_params):
@@ -126,7 +126,7 @@ class RestDispatcher(ObjectDispatcher):
         current_controller = state.controller
         method_name = method
         http_method = state.request.method
-        method = self._find_first_exposed(current_controller, ('%s_%s' %(http_method, method_name), method_name, 'post_%s' %method_name))
+        method = self._find_first_exposed(current_controller, (f'{http_method}_{method_name}', method_name, f'post_{method_name}'))
 
         if method and method_matches_args(method, state.params, remainder, self._use_lax_params):
             state.set_action(method, remainder)
@@ -207,7 +207,7 @@ class RestDispatcher(ObjectDispatcher):
         """
         self._enter_controller(state, remainder)
 
-        #log.debug('Entering dispatch for remainder: %s in controller %s'%(remainder, self))
+        # log.debug(f'Entering dispatch for remainder: {remainder} in controller {self}')
         if not hasattr(state, 'http_method'):
             method = state.request.method.lower()
             params = state.params
