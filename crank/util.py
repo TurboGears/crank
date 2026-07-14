@@ -5,54 +5,47 @@ Copyright (c) Chrispther Perkins
 MIT License
 """
 
-import collections, sys, string, inspect
+import collections
+import string
+import inspect
 import warnings
 
 __all__ = [
-        'get_argspec', 'get_params_with_argspec', 'remove_argspec_params_from_params',
-        'method_matches_args', 'Path', 'default_path_translator', 'flatten_arguments'
-    ]
+    'get_argspec', 'get_params_with_argspec', 'remove_argspec_params_from_params',
+    'method_matches_args', 'Path', 'default_path_translator', 'flatten_arguments'
+]
 
 
-_PY2 = bool(sys.version_info[0] == 2)
-
-
-class _NotFound(object):
+class _NotFound:
     pass
 
 
 def _getargspec(func):
-    if not hasattr(inspect, 'signature'):
-        return inspect.getargspec(func)
-    else:  #pragma: no cover
-        sig = inspect.signature(func)
-        args = [
-            p.name for p in sig.parameters.values()
-            if p.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
-        ]
-        varargs = [
-            p.name for p in sig.parameters.values()
-            if p.kind == inspect.Parameter.VAR_POSITIONAL
-        ]
-        varargs = varargs[0] if varargs else None
-        varkw = [
-            p.name for p in sig.parameters.values()
-            if p.kind == inspect.Parameter.VAR_KEYWORD
-        ]
-        varkw = varkw[0] if varkw else None
-        defaults = tuple((
-            p.default for p in sig.parameters.values()
-            if p.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD and p.default is not p.empty
-        )) or None
-        return args, varargs, varkw, defaults
+    sig = inspect.signature(func)
+    args = [
+        p.name for p in sig.parameters.values()
+        if p.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+    ]
+    varargs = [
+        p.name for p in sig.parameters.values()
+        if p.kind == inspect.Parameter.VAR_POSITIONAL
+    ]
+    varargs = varargs[0] if varargs else None
+    varkw = [
+        p.name for p in sig.parameters.values()
+        if p.kind == inspect.Parameter.VAR_KEYWORD
+    ]
+    varkw = varkw[0] if varkw else None
+    defaults = tuple((
+        p.default for p in sig.parameters.values()
+        if p.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD and p.default is not p.empty
+    )) or None
+    return args, varargs, varkw, defaults
 
 
 _cached_argspecs = {}
 def get_argspec(func):
-    if _PY2:
-        im_func = getattr(func, 'im_func', func)
-    else:  #pragma: no cover
-        im_func = getattr(func, '__func__', func)
+    im_func = getattr(func, '__func__', func)
 
     if hasattr(im_func, '__wrapped__'):
         # Cope with decorated functions if they properly updated __wrapped__
@@ -241,21 +234,12 @@ def method_matches_args(method, params, remainder, lax_params=False):
     return False
 
 
-if _PY2: #pragma: no cover
-    translation_dict = dict([(ord(c), unicode('_')) for c in unicode(string.punctuation)])
-    translation_string = string.maketrans(string.punctuation,
-                                          '_' * len(string.punctuation))
-else: #pragma: no cover
-    translation_dict = None
-    translation_string = str.maketrans(string.punctuation,
+translation_string = str.maketrans(string.punctuation,
                                        '_' * len(string.punctuation))
 
 
 def default_path_translator(path_piece):
-    if isinstance(path_piece, str):
-        return path_piece.translate(translation_string)
-    else: #pragma: no cover
-        return path_piece.translate(translation_dict)
+    return path_piece.translate(translation_string)
 
 
 def noop_translation(path_piece):
@@ -275,12 +259,7 @@ class Path(collections.deque):
         separator = self.separator
         self.clear()
 
-        if not _PY2: # pragma: no cover
-            string_types = str
-        else: # pragma: no cover
-            string_types = basestring
-
-        if isinstance(value, string_types):
+        if isinstance(value, str):
             self.extend(value.split(separator))
             return
 
@@ -291,10 +270,6 @@ class Path(collections.deque):
 
     def __str__(self):
         return str(self.separator).join(self)
-
-    def __unicode__(self):  # pragma: no cover
-        #unused on PY3
-        return unicode(self.separator).join(self)
 
     def __repr__(self):
         return "<Path [%s]>" % ', '.join((repr(p) for p in self))

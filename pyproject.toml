@@ -1,0 +1,55 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "crank"
+version = "0.8.1"
+description = "Generalization of dispatch mechanism for use across frameworks"
+readme = "README.rst"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Christopher Perkins", email = "chris@percious.com"}
+]
+keywords = ["dispatch", "web", "turbogears"]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: Internet :: WWW/HTTP",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+]
+dependencies = [
+    "webob>=1.8.0",
+]
+
+[project.optional-dependencies]
+testing = [
+    "pytest>=7.0",
+    "pytest-cov",
+]
+
+[project.urls]
+Homepage = "https://github.com/TurboGears/crank"
+Documentation = "https://github.com/TurboGears/crank"
+Repository = "https://github.com/TurboGears/crank"
+Issues = "https://github.com/TurboGears/crank/issues"
+
+[tool.setuptools]
+packages = ["crank"]
+zip-safe = true
+include-package-data = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --cov=crank"
+
+[tool.coverage.run]
+source = ["crank"]
+omit = ["tests/*", "*/python*/site-packages/*"]

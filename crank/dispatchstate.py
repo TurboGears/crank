@@ -5,10 +5,7 @@ import warnings
 
 from crank.util import default_path_translator, noop_translation
 
-try:
-    string_type = basestring
-except NameError: # pragma: no cover
-    string_type = str
+string_type = str
 
 
 class DispatchState(object):

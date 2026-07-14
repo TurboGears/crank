@@ -1,15 +1,12 @@
 # encoding: utf-8
-import sys
 import pytest
 from crank.objectdispatcher import *
 from crank.dispatchstate import DispatchState
 from webob.exc import HTTPNotFound
 
-_PY3 = bool(sys.version_info[0] == 3)
-if _PY3:
-    def u(s): return s
-else:
-    def u(s): return s.decode('utf-8')
+# Python 3.10+ handles unicode natively
+def u(s):
+    return s
 
 class MockRequest(object):
 
@@ -147,7 +144,7 @@ class TestDispatcher:
         assert state.action.__name__ == '_default', state.method
 
     def test_dispatch_default_with_unicode(self):
-        req = MockRequest('/', params={u('å'):u('ß')})
+        req = MockRequest('/', params={'å':'ß'})
         state = DispatchState(req, self.dispatcher) 
         state = state.resolve()
         assert state.action.__name__ == '_default', state.method
@@ -159,7 +156,7 @@ class TestDispatcher:
         assert state.action.__name__ == 'no_args', state.method
 
     def test_controller_method_with_unicode_args(self):
-        req = MockRequest(u('/with_args/å/ß'))
+        req = MockRequest('/with_args/å/ß')
         state = DispatchState(req, self.dispatcher) 
         state = state.resolve()
         assert state.action.__name__ == 'with_args', state.method
